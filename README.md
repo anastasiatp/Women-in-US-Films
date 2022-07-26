@@ -1,2 +1,7 @@
-# Women-in-US-Films
-Analysis of the Representation of Women In U.S. Films using R and R Markdown
+# Women in US Films - By Anastasia Papadimitriou
+
+This project makes use of:
+- R
+
+Live Site URL and Status
+
