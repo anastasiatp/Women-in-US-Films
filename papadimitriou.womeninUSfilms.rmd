@@ -1,0 +1,233 @@
+---
+title: "**The Representation of Women in U.S. Films and its Relationship to the Film’s Financial Success or Failure**"
+author: "Anastasia Papadimitriou"
+date: "4/29/2022"
+output: html_document
+---
+
+```{r setup, include = FALSE}
+# markdown options
+options(htmltools.dir.version = FALSE)
+knitr::opts_chunk$set(
+  message = FALSE, warning = FALSE, eval = TRUE, echo = FALSE,
+  fig.align = 'center')
+
+# packages 
+library(tidyverse)
+library(scales)
+library(stargazer)
+library(gt)
+```
+
+```{r}
+# Import raw data from source
+  url = "https://raw.githubusercontent.com/fivethirtyeight/data/master/bechdel/movies.csv"
+  rawdf = read_csv(url, na = "#N/A")
+ 
+# Keep and rename select variables
+  mov = rawdf %>%
+    select(1:5,11:13,-4) %>%  # isolate vars
+    rename(
+  	Bechdel = clean_test,
+  	Budget = `budget_2013$`,
+  	GrossDom = `domgross_2013$`,
+  	GrossInt = `intgross_2013$`
+    )
+    
+# Order factor categories
+  mov = mov %>%
+    mutate(
+  	Bechdel = fct_relevel(Bechdel, "nowomen","notalk","men","dubious","ok")
+    )
+ 
+# Calculate ROI, lenient Bechdel
+  mov = mov %>%
+    mutate(
+  	ROI = GrossDom/Budget,
+  	BechdelBinary = if_else(Bechdel %in% c("ok","dubious"), "PASS", "FAIL")
+    )
+  
+newmov = mov %>%  
+   mutate( 
+   title = str_remove(as_factor(title), "&#39;"),
+   title = str_remove(as_factor(title), "&amp;"),
+   .keep = 'unused')
+```
+
+# **Overview**
+
+This report seeks to provide key findings and summary statistics about female representation in U.S. films and its relationship to the film's financial successes and failures. 
+
+Central Findings 
+
+  * Avatar, which was categorized as "men" (dialogue between female characters always about men) by the Bechdel test, had the highest budget of $461,435,929 (2013 USD).
+  * El Mariachi, which was categorized as	"nowomen" (film did not feature two named female characters) by the Bechdel test, had the highest return of investment of $291.5708 earned for each dollar spent (2013 USD).
+  * Primer, which was categorized as "notalk" (no dialogue between prominent female characters)	by the Bechdel test, had the lowest budget of $8,632 (2013 USD).
+  * Perrier's Bounty,	which was categorized as "nowomen" (film did not feature two named female characters) by the Bechdel test, had the lowest return of investment of $0.0001254565 earned for each dollar spent (2013 USD).
+  * There was a steady increase of female representation of women throughout the decades between 1970 and 2013.
+  * The mean ROI of U.S. films that failed the Bechdel test ($4.351427 earned for each dollar spent) is higher than the mean ROI of U.S. films that passed the Bechdel test ($3.345005 earned for each dollar spent). 
+  * The median ROI of U.S. films that passed the Bechdel test ($1.424952 earned for each dollar spent) is slightly higher than the median ROI of U.S. films that failed the Bechdel test ($1.300243 earned for each dollar spent).
+  * The mean budget of U.S. films that failed the Bechdel test ($63,399,082) is higher than the mean budget of U.S. films that passed the Bechdel test ($48,336,176). 
+  * The median budget of U.S. films that failed the Bechdel test ($45,863,384) is higher than the median budget of U.S. films that passed the Bechdel test ($31,784,400). 
+  * The highest number of films (803) fit into the "ok" (Female characters have meaningful dialogue not about men) category.
+  * The second highest number of films (514) fit into the "notalk" (no dialogue between prominent female characters) category. 
+
+#	**Data and Methodology**
+
+There are 1,794 U.S. films included in the data. The data includes numerous variables, including the Bechdel test criteria, whether the films passed or failed the Bechdel test, the budget of the films, and the return of investment of the films.
+
+The way in which female representation is measured is by the Bechdel test. The Bechdel test was formulated by Alison Bechdel in 1985, where she stated that if there are at least two named women in the film, the women have a conversation with each other at some point, and the conversation they have is not about a male character, then the film passes “The Rule,” that female characters are given ["a bare minimum of depth."](https://fivethirtyeight.com/features/the-dollar-and-cents-case-against-hollywoods-exclusion-of-women/) More information about the Bechdel Test can be found [here](http://bechdeltest.com/). Below demonstrates the various Bechdel test scores featured in the data:
+
+- nowomen: film did not feature two named female characters
+- notalk: no dialogue between prominent female characters
+- men: dialogue between female characters always about men
+- dubious: some but not all judges think the film passes the test
+- ok: Female characters have meaningful dialogue not about men
+
+The financial data about these various films were collected from the [The-Numbers.com](https://www.the-numbers.com/), which is a top source for box office and budget information of films.
+
+# **Summary of Bechdel Test Results**
+
+The mean film budget was $55,464,608 and the median film budget was $36,995,786 (2013 USD). The mean film return of investment was $3.82158 and the median film return of investment was $1.36053 (2013 USD).
+
+Among all of the Bechdel test scores, the highest number of films (803) fit into the "ok" (Female characters have meaningful dialogue not about men) category. The second highest number of films (514), fit into the "notalk" (no dialogue between prominent female characters) category. The rest of the categories ("nowomen", "men", and "dubious") had a fairly evenly spread number of scores.
+
+```{r}
+newmov %>%
+  select(Bechdel) %>%
+  count(Bechdel) %>%
+  gt() %>%
+  tab_header(title = "Count of Bechdel Test Scores") %>% cols_label(
+    Bechdel = "Bechdel Score",
+    n = "Number of Films")
+```
+
+```{r, include = F, echo = F}
+summary(newmov$Budget)
+```
+
+```{r, include = F, echo = F}
+summary(newmov$ROI)
+```
+
+According to the table below, Avatar, which was categorized as "men" (dialogue between female characters always about men) by the Bechdel test, had the highest budget of $461,435,929 (2013 USD).
+
+```{r}
+newmov %>%
+    select(title, Bechdel, Budget) %>%
+    filter(complete.cases(Bechdel)) %>%
+    filter(complete.cases(Budget %in% c(max(Budget), min(Budget)))) %>% arrange(desc(Budget)) %>%
+  head(10) %>%
+  gt() %>%
+  tab_header(title = "Top 10 U.S. Films with the Highest Budget (2013 USD)") %>% cols_label(
+    title = "Film Title",
+    Bechdel = "Bechdel Score",
+    Budget = "Budget")
+```
+
+According to the table below, Primer, which was categorized as "notalk" (no dialogue between prominent female characters)	by the Bechdel test, had the lowest budget of $8,632 (2013 USD).
+
+```{r}
+newmov %>%
+    select(title, Bechdel, Budget) %>%
+    filter(complete.cases(Bechdel)) %>%
+    filter(complete.cases(Budget %in% c(max(Budget), min(Budget)))) %>% arrange(-desc(Budget)) %>%
+  head(10) %>%
+  gt() %>%
+  tab_header(title = "Top 10 U.S. Films with the Lowest Budget (2013 USD)") %>% cols_label(
+    title = "Film Title",
+    Bechdel = "Bechdel Score",
+    Budget = "Budget")
+```
+
+
+According to the table below, El Mariachi, which was categorized as	"nowomen" (film did not feature two named female characters) by the Bechdel test, had the highest return of investment of $291.5708 earned for each dollar spent (2013 USD).
+
+
+```{r}
+newmov %>%
+    select(title, Bechdel, ROI) %>%
+    filter(complete.cases(Bechdel)) %>%
+    filter(complete.cases(ROI %in% c(max(ROI), min(ROI)))) %>% arrange(desc(ROI)) %>%
+  head(10) %>%
+  gt() %>%
+  tab_header(title = "Top 10 U.S. Films with the Highest Return of Investment (2013 USD)") %>% cols_label(
+    title = "Film Title",
+    Bechdel = "Bechdel Score",
+    ROI = "ROI")
+```
+
+According to the table below, Perrier's Bounty,	which was categorized as "nowomen" (film did not feature two named female characters) by the Bechdel test, had the lowest return of investment of $0.0001254565 earned for each dollar spent (2013 USD).
+
+```{r}
+newmov %>%
+    select(title, Bechdel, ROI) %>%
+    filter(complete.cases(Bechdel)) %>%
+    filter(complete.cases(ROI %in% c(max(ROI), min(ROI)))) %>% arrange(-desc(ROI)) %>%
+  head(10) %>%
+  gt() %>%
+  tab_header(title = "Top 10 U.S. Films with the Lowest Return of Investment (2013 USD)") %>% cols_label(
+    title = "Film Title",
+    Bechdel = "Bechdel Score",
+    ROI = "ROI")
+
+```
+
+# **Is Female Representation Improving Over Time?**
+
+Fig. 1 below demonstrates the percentage of films that passed the Bechdel test in each decade. The x-axis represents year, and the y-axis represents the percentage of films that passed the Bechdel test. We can observe that over time, the representation of women in films is improving. The percentage increases steadily as each decade progresses, indicating an upwards trend.
+
+```{r viz 1, fig.width = 7, fig.height = 4, fig.cap = "Fig. 1 Bechdel Passed Tests Over Time"}
+newmov %>% 
+  select (BechdelBinary, year) %>%
+  filter(BechdelBinary == "PASS") %>%
+  ggplot(aes(x = year)) +
+    geom_histogram(color = 'white', 
+                   fill = 'maroon1',
+                   aes(y = stat(width*density))) + scale_x_continuous(limits = c(1970,2013)) + scale_y_continuous(labels = label_percent()) +
+  labs(y = "Percentage of Films that Passed the Bechdel Test", 
+       x = "Year",
+       title = "Percentage of Films that Passed the Bechdel Test in Each Decade") +
+  theme_minimal() + 
+  theme(panel.grid.major.y = element_line(color = 'gray90')
+	)
+```
+
+# **Are Films that Feature Female Characters Less Successful than those that do not?**
+
+The table below demonstrates the means and medians of budgets of films that passed and failed the Bechdel test. The mean budget of U.S. films that failed the Bechdel test ($63,399,082) is higher than the mean budget of U.S. films that passed the Bechdel test ($48,336,176). In addition, the median budget of U.S. films that failed the Bechdel test ($45,863,384) is higher than the median budget of U.S. films that passed the Bechdel test ($31,784,400). By looking at this comparison, we can see that U.S. films that did not have sufficient criteria for female representation had the average higher success in terms of their budget.
+
+```{r}
+newmov %>% 
+    group_by(BechdelBinary) %>%
+    summarize(
+      mean_budget = mean(Budget, na.rm = T),
+      median_budget = median(Budget, na.rm = T)
+    ) %>% gt() %>%
+  tab_header(title = "Comparison of Means and Medians of Budgets of U.S. Films (2013 USD)") %>% cols_label(
+    BechdelBinary = "Bechdel Test",
+    mean_budget = "Mean Budget",
+    median_budget = "Median Budget")
+```
+
+The table below demonstrates the means and medians of return of investment (ROI) of films that passed and failed the Bechdel test. The mean ROI of U.S. films that failed the Bechdel test ($4.351427 earned for each dollar spent) is higher than the mean ROI of U.S. films that passed the Bechdel test ($3.345005 earned for each dollar spent). In addition, the median ROI of U.S. films that passed the Bechdel test ($1.424952 earned for each dollar spent) is slightly higher than the median ROI of U.S. films that failed the Bechdel test ($1.300243 earned for each dollar spent). By looking at this comparison, we can see that U.S. films that did not have sufficient criteria for female representation had the average higher success in terms of their return of investment. 
+
+```{r}
+newmov %>% 
+    group_by(BechdelBinary) %>%
+    summarize(
+      mean_ROI = mean(ROI, na.rm = T),
+      median_ROI = median(ROI, na.rm = T)
+    ) %>% gt() %>%
+  tab_header(title = "Comparison of Means and Medians of Return of Investment of U.S. Films (2013 USD)") %>% cols_label(
+    BechdelBinary = "Bechdel Test",
+    mean_ROI = "Mean ROI",
+    median_ROI = "Median ROI")
+```
+
+
+
+
+
+
+
